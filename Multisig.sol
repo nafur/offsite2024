@@ -167,6 +167,7 @@ contract Multisig is State {
         returns (bool)
     {
         require(transactionIdsReverseMap[transactionId] != 0);
+        require(transactionIdsReverseMap[transactionId] < transactionIds.length);
         return transactionIds[transactionIdsReverseMap[transactionId]] == transactionId;
     }
 
