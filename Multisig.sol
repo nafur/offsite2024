@@ -38,6 +38,13 @@ contract Multisig is State {
         uint256 newQuorum,
         uint256 _step
     ) public   {
+        require(!isValidator[validator]);
+        validatorsReverseMap[validator] = validators.length;
+        validators.push(validator);
+        isValidator[validator] = true;
+
+        // TODO: not sure how to check that quorum == fib[_step]
+        quorum = newQuorum;
     }
 
 
