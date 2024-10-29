@@ -204,11 +204,20 @@ contract Multisig is State {
         }
     }
 
-    function executeTransaction(bytes32 transactionId) public
+    function executeTransaction(bytes32 transactionId) public payable
     {
         require(transactionExists(transactionId));
         require(isConfirmed(transactionId));
         Transaction storage trans = transactions[transactionId];
+
+        require(msg.value >= trans.value);
+        if (trans.hasReward) {
+            require(trans.value >= WRAPPING_FEE);
+            rewardsPot += WRAPPING_FEE;
+        } else {
+            require(trans.value == 0);
+        }
+        
         require(trans.executed == false);
         (bool success,) = trans.destination.call{value: trans.value}(trans.data);
         trans.executed = true;
