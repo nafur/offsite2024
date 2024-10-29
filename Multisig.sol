@@ -179,7 +179,6 @@ contract Multisig is State {
         bool hasReward
     ) public payable {
         require(isValidator[msg.sender]);
-        require(!confirmations[transactionId][msg.sender]);
 
         if (transactionExists(transactionId)) {
             if (isVoteToChangeValidator(data, destination)) {
@@ -200,9 +199,11 @@ contract Multisig is State {
             transactionIds.push(transactionId);
         }
 
-        confirmations[transactionId][msg.sender] = true;
-        if (isConfirmed(transactionId) && !transactions[transactionId].executed) {
-            executeTransaction(transactionId);
+        if (!confirmations[transactionId][msg.sender]) {
+            confirmations[transactionId][msg.sender] = true;
+            if (isConfirmed(transactionId) && !transactions[transactionId].executed) {
+                executeTransaction(transactionId);
+            }
         }
     }
 
