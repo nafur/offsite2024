@@ -157,8 +157,9 @@ contract Multisig is State {
         public
     {
         require(msg.sender == address(this));
+        require(_quorum != 0);
+        require(_quorum <= validators.length);
         require(_quorum == fib(_step));
-        require(_quorum < validators.length);
         quorum = _quorum;
         step = _step;
     }
