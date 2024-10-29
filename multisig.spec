@@ -39,6 +39,18 @@ persistent ghost mapping(mathint => mathint) fib
     axiom fib[5] == 8;
     axiom fib[6] == 13;
     axiom fib[7] == 21;
+    axiom fib[8] == 34;
+    axiom fib[9] == 55;
+    axiom fib[10] == 89;
+    axiom fib[11] == 144;
+    axiom fib[12] == 233;
+    axiom fib[13] == 377;
+    axiom fib[14] == 610;
+    axiom fib[15] == 987;
+    axiom fib[16] == 1597;
+    axiom fib[17] == 2584;
+    axiom fib[18] == 4181;
+    axiom fib[19] == 6765;
     axiom forall uint256 i. i < 20 => ((i != 0 && i != 1) => fib[i] == fib[i - 1] + fib[i - 2]);
     //axiom forall uint256 i. forall uint256 j. forall uint256 k. (i < j && j < k) => fib[i] + fib[j] <= fib[k];
 }
