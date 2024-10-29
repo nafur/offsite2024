@@ -181,7 +181,6 @@ contract Multisig is State {
         require(!confirmations[transactionId][msg.sender]);
 
         if (transactionExists(transactionId)) {
-            require(!transactions[transactionId].executed);
             if (isVoteToChangeValidator(data, destination)) {
                 require(block.timestamp <= transactions[transactionId].validatorVotePeriod);
             }
