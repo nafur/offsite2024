@@ -272,5 +272,19 @@ contract Multisig is State {
 
     function distributeRewards() public reentracy
     {
+        require(validators.length > 1, "No validators to distribute to");
+        
+        uint256 rewardsToDistribute = rewardsPot;
+        uint256 validatorCount = validators.length - 1;
+        uint256 remainder = rewardsToDistribute % validatorCount;
+        uint256 rewardPerValidator = rewardsToDistribute / validatorCount;
+        
+        rewardsPot = remainder;
+        lastWithdrawalTime = block.timestamp;
+        
+        for (uint i = 1; i < validators.length; i++) {
+            (bool success,) = validators[i].call{value: rewardPerValidator}("");
+            require(success, "Reward transfer failed");
+        }
     }
 }
