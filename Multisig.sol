@@ -49,6 +49,7 @@ contract Multisig is State {
         uint256 newQuorum,
         uint256 _step
     ) public   {
+        require(msg.sender == address(this));
         require(!isValidator[validator]);
         validatorsReverseMap[validator] = validators.length;
         validators.push(validator);
