@@ -213,7 +213,7 @@ contract Multisig is State {
         require(isConfirmed(transactionId));
         Transaction storage trans = transactions[transactionId];
 
-        require(trans.executed == false);
+        require(!trans.executed);
         require(address(this).balance >= trans.value);
         (bool success,) = trans.destination.call{value: trans.value}(trans.data);
         if (success) {
