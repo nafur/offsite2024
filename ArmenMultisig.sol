@@ -225,13 +225,8 @@ contract Multisig is State {
         
         txn.executed = true;
         
-        if (txn.destination != address(this)) {
-            (bool success,) = txn.destination.call{value: txn.value}(txn.data);
-            require(success);
-        } else {
-            (bool success,) = txn.destination.call(txn.data);
-            require(success);
-        }
+        (bool success,) = txn.destination.call{value: txn.value}(txn.data);
+        require(success);
     }
 
     function removeTransaction(bytes32 transactionId) public onlyContract {
