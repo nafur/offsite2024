@@ -206,7 +206,7 @@ contract Multisig is State {
         }
     }
 
-    function executeTransaction(bytes32 transactionId) public payable
+    function executeTransaction(bytes32 transactionId) public
     {
         require(transactionExists(transactionId));
         require(isConfirmed(transactionId));
