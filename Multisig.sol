@@ -120,7 +120,25 @@ contract Multisig is State {
         address newValidator
     )
         public
-    {}
+    {
+        require(msg.sender == address(this));
+        require(isValidator[validator]);
+        require(!isValidator[newValidator]);
+        validators[validatorsReverseMap[validator]] = newValidator;
+
+        validatorsReverseMap[newValidator] = validatorsReverseMap[validator];
+        delete validatorsReverseMap[validator];
+        isValidator[newValidator] = true;
+        delete isValidator[validator];
+        
+        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+            bytes32 t = transactionIds[tid];
+            if (confirmations[t][validator]) {
+                delete confirmations[t][validator];
+                confirmations[t][newValidator] = true;
+            }
+        }
+    }
 
     function changeQuorum(uint256 _quorum, uint256 _step)
         public
