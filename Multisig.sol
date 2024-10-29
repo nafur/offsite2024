@@ -64,6 +64,8 @@ contract Multisig is State {
     {
         for (uint256 i = 0; i < newValidators.length; i++) {
             require(!isValidator[newValidators[i]]);
+            require(newValidators[i] != address(0));
+            require(newValidators[i] != address(this));
             
             validatorsReverseMap[newValidators[i]] = validators.length;
             validators.push(newValidators[i]);
