@@ -236,6 +236,8 @@ contract Multisig is State {
         transactionIds[id] = transactionIds[transactionIds.length - 1];
         transactionIds.pop();
 
+        transactionIdsReverseMap[transactionIds[id]] = id;
+
         require(transactionExists(transactionIds[id]));
 
         delete transactions[transactionId];
