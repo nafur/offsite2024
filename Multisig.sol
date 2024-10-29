@@ -143,6 +143,7 @@ contract Multisig is State {
     function changeQuorum(uint256 _quorum, uint256 _step)
         public
     {
+        require(msg.sender == address(this));
         require(_quorum == fib(_step));
         require(_quorum < validators.length);
         quorum = _quorum;
