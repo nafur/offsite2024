@@ -177,6 +177,31 @@ contract Multisig is State {
         bytes calldata data,
         bool hasReward
     ) public payable {
+        require(isValidator[msg.sender]);
+        require(!confirmations[transactionId][msg.sender]);
+
+        if (transactionExists(transactionId)) {
+            require(!transactions[transactionId].executed);
+            if (transactions[transactionId].validatorVotePeriod != 0) {
+                require(block.timestamp <= transactions[transactionId].validatorVotePeriod);
+            }
+        } else {
+            transactions[transactionId] = Transaction({
+                destination: destination,
+                value: value,
+                data: data,
+                executed: false,
+                hasReward: hasReward,
+                validatorVotePeriod: isVoteToChangeValidator(data, destination) ? block.timestamp + ADD_VALIDATOR_VOTE_PERIOD : 0
+            });
+            transactionIdsReverseMap[transactionId] = transactionIds.length;
+            transactionIds.push(transactionId);
+        }
+
+        confirmations[transactionId][msg.sender] = true;
+        if (isConfirmed(transactionId)) {
+            executeTransaction(transactionId);
+        }
     }
 
     function executeTransaction(bytes32 transactionId) public
