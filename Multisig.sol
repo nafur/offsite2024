@@ -94,6 +94,10 @@ contract Multisig is State {
         delete isValidator[validator];
 
         changeQuorum(newQuorum, _step);
+
+        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+            delete confirmations[transactionIds[tid]][validator];
+        }
     }
 
 
@@ -137,6 +141,7 @@ contract Multisig is State {
     }
 
     function isConfirmed(bytes32 transactionId) public view returns (bool) {
+        return getConfirmationCount(transactionId) >= quorum;
     }
 
     function getDataOfTransaction(bytes32 id) external view returns (bytes memory data){
@@ -153,7 +158,10 @@ contract Multisig is State {
         view
         returns (uint256 count)
     {
-
+        count = 0;
+        for (uint256 vid = 0; vid < validators.length; vid++) {
+            if (confirmations[transactionId][validators[vid]]) count++;
+        }
     }
 
     function distributeRewards() public reentracy
