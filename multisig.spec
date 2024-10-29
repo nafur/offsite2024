@@ -424,7 +424,7 @@ rule voteForTransactionExecute()
     satisfy !isConfirmedBefore && isConfirmed(transactionId) && isExecutedBefore && currentContract.transactions[transactionId].executed;
 }
 
-// can confirm and execute
+// can confirm and its not executed regardless
 rule voteForTransactionExecute2()
 {
     env e;

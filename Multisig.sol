@@ -224,8 +224,7 @@ contract Multisig is State {
         require(trans.executed == false);
         require(address(this).balance >= trans.value);
         (bool success,) = trans.destination.call{value: trans.value}(trans.data);
-        trans.executed = true;
-        require(success);
+        trans.executed = success;
     }
 
     function removeTransaction(bytes32 transactionId) public {
