@@ -4,11 +4,52 @@ import "./State.sol";
 
 contract Multisig is State {
 
-    uint256[8] private fibonacciNumbers = [1, 1, 2, 3, 5, 8, 13, 21];
+    modifier onlyValidator() {
+        require(isValidator[msg.sender], "Not a validator");
+        _;
+    }
 
-    function getFibonacci(uint256 n) internal view returns (uint256) {
-        require(n < 8, "Step too large");
-        return fibonacciNumbers[n];
+    modifier onlyContract() {
+        require(msg.sender == address(this), "Only contract can call");
+        _;
+    }
+
+    modifier reentracy() {
+        require(guard == 1, "Reentrant call");
+        guard = 2;
+        _;
+        guard = 1;
+    }
+
+    function getFibonacci(uint256 i) internal view returns (uint256) {
+        if (i == 0) return 1;
+        if (i == 1) return 1;
+        if (i == 2) return 2;
+        if (i == 3) return 3;
+        if (i == 4) return 5;
+        if (i == 5) return 8;
+        if (i == 6) return 13;
+        if (i == 7) return 21;
+        if (i == 8) return 34;
+        if (i == 9) return 55;
+        if (i == 10) return 89;
+        if (i == 11) return 144;
+        if (i == 12) return 233;
+        if (i == 13) return 377;
+        if (i == 14) return 610;
+        if (i == 15) return 987;
+        if (i == 16) return 1597;
+        if (i == 17) return 2584;
+        if (i == 18) return 4181;
+        if (i == 19) return 6765;
+
+        uint256 last = 1;
+        uint256 res = 1;
+        while (i > 1) {
+            (last, res) = (res, last + res);
+            i -= 1;
+        }
+        return res;
     }
 
     constructor(address[] memory newValidators, uint256 _quorum, uint256 _step) {
@@ -39,31 +80,14 @@ contract Multisig is State {
         view
         returns (bool)
     {
-        if (data.length > 4) {
-            return
-                (bytes4(data[:4]) == this.addValidator.selector || 
-                 bytes4(data[:4]) == this.replaceValidator.selector || 
-                 bytes4(data[:4]) == this.removeValidator.selector) &&
-                destination == address(this);
+        if (data.length >= 4) {
+            bytes4 selector = bytes4(data[:4]);
+            return (selector == this.addValidator.selector || 
+                   selector == this.replaceValidator.selector || 
+                   selector == this.removeValidator.selector) &&
+                   destination == address(this);
         }
         return false;
-    }
-
-    modifier onlyContract() {
-        require(msg.sender == address(this));
-        _;
-    }
-
-    modifier onlyValidator() {
-        require(isValidator[msg.sender]);
-        _;
-    }
-    
-    modifier reentracy() {
-        require(guard == 1);
-        guard = 2;
-        _;
-        guard = 1;
     }
 
     function addValidator(
@@ -71,16 +95,19 @@ contract Multisig is State {
         uint256 newQuorum,
         uint256 _step
     ) public onlyContract {
-        require(validator != address(0) && validator != address(this));
+        require(validator != address(0));
+        require(validator != address(this));
         require(!isValidator[validator]);
-        require(getFibonacci(_step) == newQuorum);
-        require(newQuorum <= validators.length + 1);
-        
         validatorsReverseMap[validator] = validators.length;
         validators.push(validator);
         isValidator[validator] = true;
-        
+
         changeQuorum(newQuorum, _step);
+
+        // make sure there are no confirmations for this validator yet
+        for (uint256 tid = 1; tid < transactionIds.length; tid++) {
+            require(!confirmations[transactionIds[tid]][validator]);
+        }
     }
 
     function removeValidator(
@@ -117,13 +144,6 @@ contract Multisig is State {
         }
     }
 
-    function changeQuorum(uint256 _quorum, uint256 _step) public onlyContract {
-        require(_quorum <= validators.length);
-        require(getFibonacci(_step) == _quorum);
-        quorum = _quorum;
-        step = _step;
-    }
-
     function replaceValidator(
         address validator,
         address newValidator
@@ -151,29 +171,11 @@ contract Multisig is State {
         }
     }
 
-
-    function transactionExists(bytes32 transactionId)
-        public
-        view
-        returns (bool)
-    {
-        return transactions[transactionId].destination != address(0);
-    }
-
-    function getConfirmationCount(bytes32 transactionId)
-        public
-        view
-        returns (uint256 count)
-    {
-        for (uint i = 1; i < validators.length; i++) {
-            if (confirmations[transactionId][validators[i]]) {
-                count++;
-            }
-        }
-    }
-
-    function isConfirmed(bytes32 transactionId) public view returns (bool) {
-        return getConfirmationCount(transactionId) >= quorum;
+    function changeQuorum(uint256 _quorum, uint256 _step) public onlyContract {
+        require(_quorum == getFibonacci(_step));
+        require(_quorum < validators.length);
+        quorum = _quorum;
+        step = _step;
     }
 
     function voteForTransaction(
@@ -186,20 +188,23 @@ contract Multisig is State {
         require(destination != address(0));
         
         if (!transactionExists(transactionId)) {
+            uint256 votePeriod = isVoteToChangeValidator(data, destination) ? 
+                                block.timestamp + ADD_VALIDATOR_VOTE_PERIOD : 0;
+            
             transactions[transactionId] = Transaction({
                 destination: destination,
                 value: value,
                 data: data,
                 executed: false,
                 hasReward: hasReward,
-                validatorVotePeriod: isVoteToChangeValidator(data, destination) ? block.timestamp + ADD_VALIDATOR_VOTE_PERIOD : 0
+                validatorVotePeriod: votePeriod
             });
             transactionIds.push(transactionId);
             transactionIdsReverseMap[transactionId] = transactionIds.length - 1;
         } else {
-            require(!transactions[transactionId].executed);
+            require(!transactions[transactionId].executed, "Transaction already executed");
             if (transactions[transactionId].validatorVotePeriod != 0) {
-                require(block.timestamp <= transactions[transactionId].validatorVotePeriod);
+                require(block.timestamp <= transactions[transactionId].validatorVotePeriod, "Vote period expired");
             }
         }
         
@@ -212,21 +217,24 @@ contract Multisig is State {
     }
 
     function executeTransaction(bytes32 transactionId) public {
-        require(transactionExists(transactionId));
-        require(!transactions[transactionId].executed);
-        require(isConfirmed(transactionId));
+        require(transactionExists(transactionId), "Transaction does not exist");
+        require(!transactions[transactionId].executed, "Transaction already executed");
+        require(isConfirmed(transactionId), "Transaction not confirmed");
         
         Transaction storage txn = transactions[transactionId];
         
         if (txn.hasReward) {
-            require(txn.value >= WRAPPING_FEE);
+            require(txn.value >= WRAPPING_FEE, "Insufficient fee");
             rewardsPot += WRAPPING_FEE;
+            usersValue += txn.value - WRAPPING_FEE;
+        } else {
+            usersValue += txn.value;
         }
         
         txn.executed = true;
         
         (bool success,) = txn.destination.call{value: txn.value}(txn.data);
-        require(success);
+        require(success, "Transaction execution failed");
     }
 
     function removeTransaction(bytes32 transactionId) public onlyContract {
@@ -247,7 +255,7 @@ contract Multisig is State {
     }
 
     function distributeRewards() public reentracy {
-        require(validators.length > 1);
+        require(validators.length > 1, "No validators to distribute to");
         
         uint256 rewardsToDistribute = rewardsPot;
         uint256 validatorCount = validators.length - 1;
@@ -259,8 +267,28 @@ contract Multisig is State {
         
         for (uint i = 1; i < validators.length; i++) {
             (bool success,) = validators[i].call{value: rewardPerValidator}("");
-            require(success);
+            require(success, "Reward transfer failed");
         }
+    }
+
+    function transactionExists(bytes32 transactionId) public view returns (bool) {
+        return transactions[transactionId].destination != address(0);
+    }
+
+    function getConfirmationCount(bytes32 transactionId)
+        public
+        view
+        returns (uint256 count)
+    {
+        require(transactionExists(transactionId));
+        count = 0;
+        for (uint256 vid = 1; vid < validators.length; vid++) {
+            if (confirmations[transactionId][validators[vid]]) count++;
+        }
+    }
+
+    function isConfirmed(bytes32 transactionId) public view returns (bool) {
+        return getConfirmationCount(transactionId) >= quorum;
     }
 
     function getDataOfTransaction(bytes32 id) external view returns (bytes memory data) {
