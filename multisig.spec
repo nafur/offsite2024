@@ -39,18 +39,6 @@ persistent ghost mapping(mathint => mathint) fib
     axiom fib[5] == 8;
     axiom fib[6] == 13;
     axiom fib[7] == 21;
-    axiom fib[8] == 34;
-    axiom fib[9] == 55;
-    axiom fib[10] == 89;
-    axiom fib[11] == 144;
-    axiom fib[12] == 233;
-    axiom fib[13] == 377;
-    axiom fib[14] == 610;
-    axiom fib[15] == 987;
-    axiom fib[16] == 1597;
-    axiom fib[17] == 2584;
-    axiom fib[18] == 4181;
-    axiom fib[19] == 6765;
     axiom forall uint256 i. i < 20 => ((i != 0 && i != 1) => fib[i] == fib[i - 1] + fib[i - 2]);
     //axiom forall uint256 i. forall uint256 j. forall uint256 k. (i < j && j < k) => fib[i] + fib[j] <= fib[k];
 }
@@ -90,6 +78,7 @@ function allInvariants(env e)
     require currentContract.transactionIds.length != 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 }
 
+// addValidator succeeds only when the contract calls itself
 rule addValidatorCaller()
 {
     env e;
@@ -100,6 +89,7 @@ rule addValidatorCaller()
     assert e.msg.sender == currentContract;
 }
 
+// length INCREASES only if the call is to addValidator, executeTransaction, or voteForTransaction
 rule lengthChangeOnlyInAddValidatorActivation(method f)
 {
     env e;
@@ -111,6 +101,7 @@ rule lengthChangeOnlyInAddValidatorActivation(method f)
     assert lengthBefore < currentContract.validators.length => f.selector == sig:addValidator(address, uint256, uint256).selector|| f.selector == sig:executeTransaction(bytes32).selector || f.selector == sig:voteForTransaction(bytes32, address, uint256, bytes, bool).selector;
 }
 
+// it's possible to increase the length using addValidator
 rule lengthChangeWorks1()
 {
     env e;
@@ -122,6 +113,7 @@ rule lengthChangeWorks1()
     satisfy lengthBefore < currentContract.validators.length;
 }
 
+// it's possible to increase the length using executeTransaction
 rule lengthChangeWorks2()
 {
     env e;
@@ -133,6 +125,7 @@ rule lengthChangeWorks2()
     satisfy lengthBefore < currentContract.validators.length;
 }
 
+// it's possible to increase the length using voteForTransaction
 rule lengthChangeWorks3()
 {
     env e;
@@ -144,6 +137,9 @@ rule lengthChangeWorks3()
     satisfy lengthBefore < currentContract.validators.length;
 }
 
+// if addValidator succeeds, it adds 1 validator
+// addValidator doesn't change the validator
+// the last validator is the added validator
 rule addValidatorFunctinality()
 {
     env e;
@@ -159,6 +155,7 @@ rule addValidatorFunctinality()
     assert !isAValidatorBefore && currentContract.isValidator[a] => currentContract.validators[assert_uint256(currentContract.validators.length - 1)] == a;
 }
 
+// it's possible to add some validator using addValidator
 rule addValidatorFunctinality2()
 {
     env e;
@@ -172,6 +169,7 @@ rule addValidatorFunctinality2()
     satisfy !isValidatorBefore && currentContract.isValidator[a];
 }
 
+// When addValidator succeeds, the quorum and step are properly set and the added validator is a validator
 rule addValidatorFunctinality3()
 {
     env e;
@@ -185,6 +183,7 @@ rule addValidatorFunctinality3()
     assert currentContract.isValidator[a] && currentContract.quorum == newQuorum && currentContract.step == step;
 }
 
+// adding a validator doesn't change the confirmation count
 rule addValidatorFunctinality4()
 {
     env e;
@@ -200,6 +199,7 @@ rule addValidatorFunctinality4()
     assert count == getConfirmationCount(transactionId);
 }
 
+// removing the validator can only be done by the current contract
 rule removeValidatorCaller()
 {
     env e;
@@ -210,6 +210,8 @@ rule removeValidatorCaller()
     assert e.msg.sender == currentContract;
 }
 
+// inexact
+// removeValidator removes one and only one validator
 rule removeValidatorFunctinality()
 {
     env e;
@@ -227,6 +229,7 @@ rule removeValidatorFunctinality()
     assert (isAValidatorBefore && !currentContract.isValidator[a] && (a != b)) => (isBValidatorBefore == currentContract.isValidator[b]);
 }
 
+// removeValidator can remove a validator
 rule removeValidatorFunctinality2()
 {
     env e;
@@ -240,6 +243,7 @@ rule removeValidatorFunctinality2()
     satisfy isValidatorBefore && !currentContract.isValidator[a];
 }
 
+// after removeValidator, a validator is unset, and quorum and step are updated
 rule removeValidatorFunctinality3()
 {
     env e;
@@ -253,6 +257,7 @@ rule removeValidatorFunctinality3()
     assert !currentContract.isValidator[a] && currentContract.quorum == newQuorum && currentContract.step == step;
 }
 
+//  there is a case in which removeValidator decreases the count
 rule removeValidatorFunctinality4()
 {
     env e;
@@ -267,6 +272,7 @@ rule removeValidatorFunctinality4()
     satisfy count - 1 == getConfirmationCount(transactionId);
 }
 
+// the count may be unimpacted by the removeValidator
 rule removeValidatorFunctinality5()
 {
     env e;
@@ -281,6 +287,7 @@ rule removeValidatorFunctinality5()
     satisfy count == getConfirmationCount(transactionId);
 }
 
+// count must decrease or not change upon removeValidator
 rule removeValidatorFunctinality6()
 {
     env e;
@@ -295,6 +302,7 @@ rule removeValidatorFunctinality6()
     assert count - 1 == getConfirmationCount(transactionId) || count == getConfirmationCount(transactionId);
 }
 
+// replaceValidator needs to be called by the contract
 rule replaceValidatorCaller()
 {
     env e;
@@ -305,6 +313,8 @@ rule replaceValidatorCaller()
     assert e.msg.sender == currentContract;
 }
 
+// replaceValidator doesn't change quorum, doesn't change validator length
+// and can remove at most one and add at most one validator
 rule replaceValidatorFunctinality()
 {
     env e;
@@ -324,6 +334,7 @@ rule replaceValidatorFunctinality()
     assert (!isAValidatorBefore && currentContract.isValidator[a] && (a != b)) => (!isBValidatorBefore => !currentContract.isValidator[b]);
 }
 
+// quorum can only be changed by the contract
 rule changeQuorumCaller()
 {
     env e;
@@ -334,6 +345,7 @@ rule changeQuorumCaller()
     assert e.msg.sender == currentContract;
 }
 
+// one needs to be the validator to invoke voteForTransaction
 rule voteForTransactionCaller()
 {
     env e;
@@ -345,6 +357,7 @@ rule voteForTransactionCaller()
     assert isValidatorBefore;
 }
 
+// WE SHOULD BE ABLE TO INCREASE CONFIRMATION COUNT using voteForTransaction
 rule voteForTransactionFunctinality()
 {
     env e;
@@ -368,7 +381,8 @@ rule voteForTransactionFunctinality()
     uint256 confirmationCountAfter = getConfirmationCount(transactionId);
     assert (isExistedBefore && destinationBefore != currentContract) => transactionExists(transactionId);
     
-    assert (isExistedBefore && transactionExists(transactionId)) => (destinationBefore == currentContract.transactions[transactionId].destination &&
+    assert (isExistedBefore && transactionExists(transactionId)) => (
+                                destinationBefore == currentContract.transactions[transactionId].destination &&
                                 valueBefore == currentContract.transactions[transactionId].value &&
                                 hash(dataBefore) == hash(getDataOfTransaction(transactionId)) &&
                                 hasRewardBefore == currentContract.transactions[transactionId].hasReward
@@ -376,6 +390,7 @@ rule voteForTransactionFunctinality()
     satisfy ((destinationBefore != currentContract) && (destination != currentContract)) && confirmationCountBefore + 1 == confirmationCountAfter;
 }
 
+// if the vote period is nonzero, the vote period is no less than the timestamp
 rule voteForTransactionTime()
 {
     env e;
@@ -392,6 +407,7 @@ rule voteForTransactionTime()
     assert currentContract.transactions[transactionId].validatorVotePeriod != 0 => e.block.timestamp <= currentContract.transactions[transactionId].validatorVotePeriod;
 }
 
+// can re-confirm after an execution
 rule voteForTransactionExecute()
 {
     env e;
@@ -407,6 +423,8 @@ rule voteForTransactionExecute()
     voteForTransaction(e, transactionId, destination, value, data, hasReward);
     satisfy !isConfirmedBefore && isConfirmed(transactionId) && isExecutedBefore && currentContract.transactions[transactionId].executed;
 }
+
+// can confirm and execute
 rule voteForTransactionExecute2()
 {
     env e;
@@ -423,6 +441,7 @@ rule voteForTransactionExecute2()
     satisfy !isConfirmedBefore && isConfirmed(transactionId) && !isExecutedBefore && !currentContract.transactions[transactionId].executed;
 }
 
+// the executeTransaction tx sender can be arbitrary
 rule executeTransactionCaller()
 {
     env e;
@@ -440,6 +459,7 @@ rule executeTransactionCaller()
     assert !lastReverted;
 }
 
+// if executeTransation succeeds and the transaction was executed, it must have been confirmed
 rule executeTransactionConfirmed()
 {
     env e;
@@ -452,6 +472,7 @@ rule executeTransactionConfirmed()
     assert currentContract.transactions[transactionId].executed => isConfirmedBefore;
 }
 
+// must be a scenario where the vote count decreases for the transaction not to be confirmed after the execution
 rule executeTransactionMayNotConfirmedAfter()
 {
     env e;
@@ -462,6 +483,9 @@ rule executeTransactionMayNotConfirmedAfter()
     satisfy currentContract.transactions[transactionId].executed && !isConfirmed(transactionId);
 }
 
+// executeTransaction must fail if the transaction is executed
+// if has rewards, WRAPPING FEE needs to be included in the value
+// must send msg.value to the function at least of tx.value
 rule executeTransactionFee()
 {
     env e;
@@ -481,6 +505,7 @@ rule executeTransactionFee()
     assert (currentContract.transactions[transactionId].destination != currentContract && currentContract.transactions[transactionId].executed) => (to_mathint(balanceBefore) - to_mathint(nativeBalances[currentContract])) <= currentContract.transactions[transactionId].value;
 }
 
+// 
 rule removeTransactionCaller()
 {
     env e;
@@ -505,6 +530,7 @@ rule removeTransactionFunctinality()
     assert lengthBefore - 1 == currentContract.transactionIds.length;
 }
 
+// rewards pot evenly distributes, leaving remainder and the last withdarawal time is updated
 rule distributeRewardsValueAfter()
 {
     env e;
