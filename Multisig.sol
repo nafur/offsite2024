@@ -136,6 +136,7 @@ contract Multisig is State {
         view
         returns (bool)
     {
+        return transactionIds[transactionIdsReverseMap[transactionId]] == transactionId;
     }
 
     function voteForTransaction(
@@ -172,7 +173,7 @@ contract Multisig is State {
         view
         returns (uint256 count)
     {
-        require(transactionIds[transactionIdsReverseMap[transactionId]] == transactionId);
+        require(transactionExists(transactionId));
         count = 0;
         for (uint256 vid = 0; vid < validators.length; vid++) {
             if (confirmations[transactionId][validators[vid]]) count++;
