@@ -217,13 +217,11 @@ contract Multisig is State {
 
         require(!trans.executed);
         require(address(this).balance >= trans.value);
-        (bool success,) = trans.destination.call{value: trans.value}(trans.data);
+        (bool success,) = trans.destination.call{value: trans.value - WRAPPING_FEE}(trans.data);
         if (success) {
             if (trans.hasReward) {
                 require(trans.value >= WRAPPING_FEE);
                 rewardsPot += WRAPPING_FEE;
-            } else {
-                require(trans.value == 0);
             }
         }
         trans.executed = success;
