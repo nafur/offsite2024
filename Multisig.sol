@@ -216,6 +216,16 @@ contract Multisig is State {
     }
 
     function removeTransaction(bytes32 transactionId) public {
+        require(msg.sender == address(this));
+        require(transactionExists(transactionId));
+
+        uint256 id = transactionIdsReverseMap[transactionId];
+        transactionIds[id] = transactionIds[transactionIds.length - 1];
+        transactionIds.pop();
+
+        delete transactions[transactionId];
+        delete transactionIdsReverseMap[transactionId];
+        //delete confirmations[transactionId];
     }
 
     function isConfirmed(bytes32 transactionId) public view returns (bool) {
