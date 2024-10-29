@@ -62,6 +62,15 @@ contract Multisig is State {
     }
     constructor(address[] memory newValidators,  uint256 _quorum, uint256 _step)
     {
+        for (uint256 i = 0; i < newValidators.length; i++) {
+            require(!isValidator[newValidators[i]]);
+            
+            validatorsReverseMap[newValidators[i]] = validators.length;
+            validators.push(newValidators[i]);
+            isValidator[newValidators[i]] = true;
+        }
+
+        changeQuorum(_quorum, _step);
     }
 
     function addValidator(
