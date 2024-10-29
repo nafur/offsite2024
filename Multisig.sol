@@ -184,6 +184,8 @@ contract Multisig is State {
         if (transactionExists(transactionId)) {
             if (isVoteToChangeValidator(data, destination)) {
                 require(block.timestamp <= transactions[transactionId].validatorVotePeriod);
+            } else {
+                require(transactions[transactionId].validatorVotePeriod == 0);
             }
         } else {
             transactions[transactionId] = Transaction({
@@ -199,7 +201,7 @@ contract Multisig is State {
         }
 
         confirmations[transactionId][msg.sender] = true;
-        if (isConfirmed(transactionId)) {
+        if (isConfirmed(transactionId) && !transactions[transactionId].executed) {
             executeTransaction(transactionId);
         }
     }
@@ -210,7 +212,7 @@ contract Multisig is State {
         require(isConfirmed(transactionId));
         Transaction storage trans = transactions[transactionId];
 
-        require(msg.value >= trans.value);
+        //require(msg.value >= trans.value);
         if (trans.hasReward) {
             require(trans.value >= WRAPPING_FEE);
             rewardsPot += WRAPPING_FEE;
@@ -219,6 +221,7 @@ contract Multisig is State {
         }
         
         require(trans.executed == false);
+        require(address(this).balance >= trans.value);
         (bool success,) = trans.destination.call{value: trans.value}(trans.data);
         trans.executed = true;
         require(success);
@@ -231,6 +234,8 @@ contract Multisig is State {
         uint256 id = transactionIdsReverseMap[transactionId];
         transactionIds[id] = transactionIds[transactionIds.length - 1];
         transactionIds.pop();
+
+        require(transactionExists(transactionIds[id]));
 
         delete transactions[transactionId];
         delete transactionIdsReverseMap[transactionId];
