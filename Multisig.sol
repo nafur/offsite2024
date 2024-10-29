@@ -79,6 +79,7 @@ contract Multisig is State {
         require(_quorum == fib(_step));
         require(_quorum < validators.length);
         quorum = _quorum;
+        step = _step;
     }
 
     function transactionExists(bytes32 transactionId)
