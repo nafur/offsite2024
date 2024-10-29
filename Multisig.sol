@@ -4,6 +4,17 @@ import "./State.sol";
 
 contract Multisig is State {
 
+    function fib(uint256 i) pure private returns (uint256) {
+        if (i == 0) return 0;
+        uint256 last = 1;
+        uint256 res = 1;
+        while (i > 1) {
+            (last, res) = (res, last + res);
+            i -= 1;
+        }
+        return res;
+    }
+
     function isVoteToChangeValidator(bytes calldata data, address destination)
         public
         view
@@ -43,7 +54,8 @@ contract Multisig is State {
         validators.push(validator);
         isValidator[validator] = true;
 
-        // TODO: not sure how to check that quorum == fib[_step]
+        require(newQuorum == fib(_step));
+        require(newQuorum < validators.length);
         quorum = newQuorum;
     }
 
