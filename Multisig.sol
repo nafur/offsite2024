@@ -62,6 +62,8 @@ contract Multisig is State {
     }
     constructor(address[] memory newValidators,  uint256 _quorum, uint256 _step)
     {
+        // add sentinel at zero
+        validators.push(address(0));
         for (uint256 i = 0; i < newValidators.length; i++) {
             require(!isValidator[newValidators[i]]);
             require(newValidators[i] != address(0));
@@ -73,6 +75,9 @@ contract Multisig is State {
         }
 
         changeQuorum(_quorum, _step);
+
+        // add sentinel at zero
+        transactionIds.push(0);
     }
 
     function addValidator(
@@ -81,6 +86,8 @@ contract Multisig is State {
         uint256 _step
     ) public   {
         require(msg.sender == address(this));
+        require(validator != address(0));
+        require(validator != address(this));
         require(!isValidator[validator]);
         validatorsReverseMap[validator] = validators.length;
         validators.push(validator);
@@ -89,7 +96,7 @@ contract Multisig is State {
         changeQuorum(newQuorum, _step);
 
         // make sure there are no confirmations for this validator yet
-        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+        for (uint256 tid = 1; tid < transactionIds.length; tid++) {
             require(!confirmations[transactionIds[tid]][validator]);
         }
     }
@@ -111,7 +118,7 @@ contract Multisig is State {
 
         changeQuorum(newQuorum, _step);
 
-        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+        for (uint256 tid = 1; tid < transactionIds.length; tid++) {
             delete confirmations[transactionIds[tid]][validator];
         }
     }
@@ -124,6 +131,8 @@ contract Multisig is State {
         public
     {
         require(msg.sender == address(this));
+        require(newValidator != address(0));
+        require(newValidator != address(this));
         require(isValidator[validator]);
         require(!isValidator[newValidator]);
         validators[validatorsReverseMap[validator]] = newValidator;
@@ -133,7 +142,7 @@ contract Multisig is State {
         isValidator[newValidator] = true;
         delete isValidator[validator];
         
-        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+        for (uint256 tid = 1; tid < transactionIds.length; tid++) {
             bytes32 t = transactionIds[tid];
             if (confirmations[t][validator]) {
                 delete confirmations[t][validator];
@@ -157,6 +166,7 @@ contract Multisig is State {
         view
         returns (bool)
     {
+        require(transactionIdsReverseMap[transactionId] != 0);
         return transactionIds[transactionIdsReverseMap[transactionId]] == transactionId;
     }
 
@@ -196,7 +206,7 @@ contract Multisig is State {
     {
         require(transactionExists(transactionId));
         count = 0;
-        for (uint256 vid = 0; vid < validators.length; vid++) {
+        for (uint256 vid = 1; vid < validators.length; vid++) {
             if (confirmations[transactionId][validators[vid]]) count++;
         }
     }
