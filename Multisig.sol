@@ -54,9 +54,7 @@ contract Multisig is State {
         validators.push(validator);
         isValidator[validator] = true;
 
-        require(newQuorum == fib(_step));
-        require(newQuorum < validators.length);
-        quorum = newQuorum;
+        changeQuorum(newQuorum, _step);
     }
 
 
@@ -78,6 +76,9 @@ contract Multisig is State {
     function changeQuorum(uint256 _quorum, uint256 _step)
         public
     {
+        require(_quorum == fib(_step));
+        require(_quorum < validators.length);
+        quorum = _quorum;
     }
 
     function transactionExists(bytes32 transactionId)
