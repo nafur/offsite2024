@@ -5,14 +5,14 @@ import "./State.sol";
 contract Multisig is State {
 
     function fib(uint256 i) pure private returns (uint256) {
-        if (i == 0) return 1;
-        if (i == 1) return 1;
-        if (i == 2) return 2;
-        if (i == 3) return 3;
-        if (i == 4) return 5;
-        if (i == 5) return 8;
-        if (i == 6) return 13;
-        if (i == 7) return 21;
+        //if (i == 0) return 1;
+        //if (i == 1) return 1;
+        //if (i == 2) return 2;
+        //if (i == 3) return 3;
+        //if (i == 4) return 5;
+        //if (i == 5) return 8;
+        //if (i == 6) return 13;
+        //if (i == 7) return 21;
         //if (i == 8) return 34;
         //if (i == 9) return 55;
         //if (i == 10) return 89;
@@ -29,7 +29,9 @@ contract Multisig is State {
         uint256 last = 1;
         uint256 res = 1;
         while (i > 1) {
-            (last, res) = (res, last + res);
+            uint256 next = last + res;
+            last = res;
+            res = next;
             i -= 1;
         }
         return res;
