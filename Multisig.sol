@@ -182,7 +182,7 @@ contract Multisig is State {
 
         if (transactionExists(transactionId)) {
             require(!transactions[transactionId].executed);
-            if (transactions[transactionId].validatorVotePeriod != 0) {
+            if (isVoteToChangeValidator(data, destination)) {
                 require(block.timestamp <= transactions[transactionId].validatorVotePeriod);
             }
         } else {
@@ -192,7 +192,7 @@ contract Multisig is State {
                 data: data,
                 executed: false,
                 hasReward: hasReward,
-                validatorVotePeriod: isVoteToChangeValidator(data, destination) ? block.timestamp + ADD_VALIDATOR_VOTE_PERIOD : 0
+                validatorVotePeriod: isVoteToChangeValidator(data, destination) ? (block.timestamp + ADD_VALIDATOR_VOTE_PERIOD) : 0
             });
             transactionIdsReverseMap[transactionId] = transactionIds.length;
             transactionIds.push(transactionId);
@@ -206,6 +206,13 @@ contract Multisig is State {
 
     function executeTransaction(bytes32 transactionId) public
     {
+        require(transactionExists(transactionId));
+        require(isConfirmed(transactionId));
+        Transaction storage trans = transactions[transactionId];
+        require(trans.executed == false);
+        (bool success,) = trans.destination.call{value: trans.value}(trans.data);
+        trans.executed = true;
+        require(success);
     }
 
     function removeTransaction(bytes32 transactionId) public {
