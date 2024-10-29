@@ -76,6 +76,11 @@ contract Multisig is State {
         isValidator[validator] = true;
 
         changeQuorum(newQuorum, _step);
+
+        // make sure there are no confirmations for this validator yet
+        for (uint256 tid = 0; tid < transactionIds.length; tid++) {
+            require(!confirmations[transactionIds[tid]][validator]);
+        }
     }
 
 
@@ -158,6 +163,7 @@ contract Multisig is State {
         view
         returns (uint256 count)
     {
+        require(transactionIds[transactionIdsReverseMap[transactionId]] == transactionId);
         count = 0;
         for (uint256 vid = 0; vid < validators.length; vid++) {
             if (confirmations[transactionId][validators[vid]]) count++;
